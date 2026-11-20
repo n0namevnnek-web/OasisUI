@@ -123,7 +123,9 @@ function Window.new(library, def)
     self.Overlays = Overlays.new(self)
     self.Overlays:SetKeybindList(self.Interface.KeybindList)
     self.Overlays:SetWatermark(self.Interface.Watermark)
-    if UIS.TouchEnabled then self.Overlays:SetMobileButton(true) end
+    -- Keep the compact opener available on both PC and mobile.  Consumers can
+    -- still opt out with OpenButton = false.
+    if self.Def.OpenButton ~= false then self.Overlays:SetMobileButton(true) end
     self.Acrylic = Acrylic.new(self.Root, self.Maid)
     self.Acrylic.Shown = self.Visible
     self.Acrylic.Strength = tonumber(self.Interface.BlurStrength) or 12
@@ -323,9 +325,18 @@ function Window:_build()
     -- topbar ------------------------------------------------------------------
     local topbar = Util.New("Frame", { Name = "Topbar", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TOP), Parent = root })
     self.Topbar = topbar
+    -- A soft duplicate behind the brand mark gives raster logos the same depth
+    -- as the old MacLib header without baking a shadow into every asset.
+    local logoShadow = Util.Icon(def.Icon or "sparkles", {
+        Size = UDim2.fromOffset(34, 34),
+        Position = UDim2.fromOffset(9, 10),
+        ImageColor3 = Color3.new(0, 0, 0),
+        ImageTransparency = 0.48,
+        Parent = topbar,
+    })
     local logo = Util.Icon(def.Icon or "sparkles", {
-        Size = UDim2.fromOffset(22, 22),
-        Position = UDim2.fromOffset(16, 14),
+        Size = UDim2.fromOffset(32, 32),
+        Position = UDim2.fromOffset(8, 8),
         Theme = { ImageColor3 = function() return Color3.new(1, 1, 1) end },
         Parent = topbar,
     })
@@ -335,7 +346,7 @@ function Window:_build()
         Parent = logo,
     })
 
-    local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(48, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
+    local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(50, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
     self.TitleHeading = heading
     Util.List(heading, 6, Enum.FillDirection.Horizontal, nil, Enum.VerticalAlignment.Center)
     local title = Util.Label({
@@ -375,7 +386,7 @@ function Window:_build()
         Text = def.Subtitle or def.SubTitle or "",
         TextSize = 11,
         Color = "TextMuted",
-        Position = UDim2.fromOffset(48, 27),
+        Position = UDim2.fromOffset(50, 27),
         Size = UDim2.new(0, 260, 0, 14),
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = topbar,
@@ -607,12 +618,31 @@ function Window:_build()
         end)
     end)
 
-    -- window drag by the topbar, not by its controls
-    self.Maid:Give(Drag.Attach(topbar, root, {
+    -- Drag from any quiet part of the window. Interactive controls and scroll
+    -- surfaces remain untouched so a slider/dropdown never moves the window.
+    self.Maid:Give(Drag.Attach(root, root, {
+        Margin = 24,
+        Scale = function() return self:GetScale() end,
         Enabled = function()
             if def.Draggable == false then return false end
             local point = Util.Pointer()
-            return not Util.Contains(actions, point)
+            if Util.Contains(actions, point) then return false end
+            local ok, objects = pcall(function()
+                local baseGui = root:FindFirstAncestorWhichIsA("BasePlayerGui")
+                return baseGui and baseGui:GetGuiObjectsAtPosition(point.X, point.Y) or {}
+            end)
+            if ok then
+                for _, object in ipairs(objects) do
+                    if object:IsDescendantOf(root) and (
+                        object:IsA("GuiButton")
+                        or object:IsA("TextBox")
+                        or object:IsA("ScrollingFrame")
+                    ) then
+                        return false
+                    end
+                end
+            end
+            return true
         end,
         OnEnd = function(moved)
             if not moved then return end
@@ -731,8 +761,91 @@ function Window:_userCard(parent)
     self.PaintUser()
     Util.Feedback(card, state)
     card.MouseButton1Click:Connect(function()
-        local user = self.Def.User
-        if type(user) == "table" and user.Callback then Util.Safe(user.Callback) end
+        local user = type(self.Def.User) == "table" and self.Def.User or {}
+        Popup.Open({
+            Anchor = card,
+            Width = 232,
+            Align = "Start",
+            Padding = 9,
+            Build = function(frame, popup)
+                local content = Util.New("Frame", {
+                    BackgroundTransparency = 1,
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    Parent = frame,
+                })
+                Util.List(content, 6, Enum.FillDirection.Vertical)
+
+                local profile = Util.New("Frame", {
+                    Size = UDim2.new(1, 0, 0, 48),
+                    LayoutOrder = 1,
+                    Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = function(t) return math.min(t.ElevatedTransparency + 0.08, 0.86) end },
+                    Parent = content,
+                })
+                Util.Corner(6, profile)
+                Util.Stroke(profile, self._premiumUser and "Warning" or "Stroke", 0.42)
+                local profileAvatar = Util.New("ImageLabel", {
+                    Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(7, 7),
+                    Image = avatar.Image, Theme = { BackgroundColor3 = "ElevatedHover" }, Parent = profile,
+                })
+                Util.Corner(UDim.new(1, 0), profileAvatar)
+                Util.Label({ Text = name.Text, TextSize = 12, Weight = Enum.FontWeight.Bold, Position = UDim2.fromOffset(49, 7), Size = UDim2.new(1, -57, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd, Parent = profile })
+                Util.Label({ Text = handle.Text .. "  •  " .. tierText.Text, TextSize = 9, Color = self._premiumUser and "Warning" or "TextMuted", Position = UDim2.fromOffset(49, 24), Size = UDim2.new(1, -57, 0, 14), TextTruncate = Enum.TextTruncate.AtEnd, Parent = profile })
+
+                local order = 2
+                local function action(iconName, titleText, hint, callback, danger)
+                    local hover = { Hover = false }
+                    local button = Util.New("TextButton", {
+                        Size = UDim2.new(1, 0, 0, 34), LayoutOrder = order,
+                        Theme = {
+                            BackgroundColor3 = danger and "Danger" or "Surface",
+                            BackgroundTransparency = function(t) return hover.Hover and math.min(t.ElevatedTransparency + 0.02, 0.78) or math.min(t.ElevatedTransparency + 0.16, 0.9) end,
+                        },
+                        Parent = content,
+                    })
+                    order += 1
+                    Util.Corner(6, button)
+                    Util.Icon(iconName, { Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(9, 10), Color = danger and "DangerText" or "TextDim", Parent = button })
+                    Util.Label({ Text = titleText, TextSize = 11, Weight = Enum.FontWeight.Medium, Color = danger and "DangerText" or "Text", Position = UDim2.fromOffset(31, 0), Size = UDim2.new(1, -82, 1, 0), Parent = button })
+                    Util.Label({ Text = hint or "", TextSize = 9, Color = "TextMuted", TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -48, 0, 0), Size = UDim2.fromOffset(40, 34), Parent = button })
+                    Util.Feedback(button, hover)
+                    button.MouseButton1Click:Connect(function()
+                        popup:Close()
+                        callback()
+                    end)
+                end
+
+                action("palette", "Interface settings", "›", function()
+                    for _, tab in ipairs(self.Tabs) do
+                        local title = string.lower(tostring(tab.Title or tab.Name or tab.Id or ""))
+                        if title == "settings" or title == "cài đặt" or title == "configuration" then
+                            self:SelectTab(tab)
+                            break
+                        end
+                    end
+                end)
+                action("panel-left-close", "Compact sidebar", self.Interface.Compact and "ON" or "OFF", function()
+                    self:SetCompact(not self.Interface.Compact)
+                end)
+                action("scan", "Menu scale", math.floor((self.Interface.Scale or 1) * 100 + 0.5) .. "%", function()
+                    local current = self.Interface.Scale or 1
+                    local nextScale = current < 0.95 and 1 or (current < 1.05 and 1.1 or 0.9)
+                    self:SetScale(nextScale)
+                end)
+                action("user-round-x", "Anonymous profile", self.Interface.HideUser and "ON" or "OFF", function()
+                    self.Interface.HideUser = not self.Interface.HideUser
+                    self.PaintUser()
+                    self:SaveState()
+                end)
+                action("eye-off", "Hide menu", Util.KeyLabel(self.MenuBinding and self.MenuBinding.Key), function()
+                    self:SetVisible(false)
+                end)
+                if type(user.Callback) == "function" then
+                    action("sparkles", "Profile action", "›", function() Util.Safe(user.Callback) end)
+                end
+                action("power", "Unload script", "", function() self.Library:Unload() end, true)
+            end,
+        })
     end)
     self.UserCard = card
     self.UserLabels = { name, handle, tierText }
