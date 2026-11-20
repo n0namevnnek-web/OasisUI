@@ -4,12 +4,12 @@
     "description": "Roblox UI library with module cards, rearrangeable columns, sub-tabs, favorites, search, a live theme editor and a config manager",
     "license": "MIT",
     "author": "Mold53",
-    "homepage": "https://github.com/Mold53/OasisUI",
+    "homepage": "https://github.com/n0namevnnek-web/OasisUI",
     "repository": {
         "type": "git",
-        "url": "https://github.com/Mold53/OasisUI.git"
+        "url": "https://github.com/n0namevnnek-web/OasisUI.git"
     },
-    "bugs": "https://github.com/Mold53/OasisUI/issues",
+    "bugs": "https://github.com/n0namevnnek-web/OasisUI/issues",
     "keywords": ["roblox", "luau", "ui-library", "roblox-ui", "script-hub"],
     "private": true,
     "type": "module",
