@@ -175,7 +175,7 @@ end
 function DiscordBox:Render(parent, maid)
     local box = maid:Give(Util.New("Frame", {
         Name = "DiscordBox",
-        Size = UDim2.new(1, 0, 0, 108),
+        Size = UDim2.new(1, 0, 0, 122),
         Visible = self.Visible,
         Theme = {
             BackgroundColor3 = "Elevated",
@@ -185,16 +185,26 @@ function DiscordBox:Render(parent, maid)
     }))
     Util.Corner(7, box)
     Util.Stroke(box)
+    local accent = Util.New("Frame", {
+        Size = UDim2.new(0, 3, 1, -14), Position = UDim2.fromOffset(0, 7),
+        Theme = { BackgroundColor3 = "Accent" }, Parent = box,
+    })
+    Util.Corner(UDim.new(1, 0), accent)
+    Util.New("UIGradient", {
+        Rotation = 90,
+        Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 0.55) }),
+        Parent = accent,
+    })
 
     local iconHolder = Util.New("Frame", {
-        Size = UDim2.fromOffset(38, 38),
-        Position = UDim2.fromOffset(9, 9),
+        Size = UDim2.fromOffset(42, 42),
+        Position = UDim2.fromOffset(11, 10),
         Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = "ElevatedTransparency" },
         Parent = box,
     })
     Util.Corner(7, iconHolder)
     local icon = Util.Icon(self.Def.Icon or "message-circle", {
-        Size = UDim2.fromOffset(28, 28),
+        Size = UDim2.fromOffset(32, 32),
         Position = UDim2.fromOffset(5, 5),
         Color = "Text",
         Parent = iconHolder,
@@ -202,10 +212,10 @@ function DiscordBox:Render(parent, maid)
 
     local title = Util.Label({
         Text = self.Title,
-        TextSize = 12,
+        TextSize = 13,
         Weight = Enum.FontWeight.SemiBold,
         Size = UDim2.new(1, -98, 0, 17),
-        Position = UDim2.fromOffset(55, 9),
+        Position = UDim2.fromOffset(61, 10),
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = box,
     })
@@ -214,7 +224,7 @@ function DiscordBox:Render(parent, maid)
         TextSize = 10,
         Color = "TextMuted",
         Size = UDim2.new(1, -98, 0, 15),
-        Position = UDim2.fromOffset(55, 27),
+        Position = UDim2.fromOffset(61, 29),
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = box,
     })
@@ -223,7 +233,7 @@ function DiscordBox:Render(parent, maid)
     if self.Invite ~= "" or self.Def.RefreshCallback or self.Def.OnRefresh then
         refresh = Util.New("TextButton", {
             Size = UDim2.fromOffset(28, 28),
-            Position = UDim2.new(1, -37, 0, 12),
+            Position = UDim2.new(1, -39, 0, 14),
             Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = "ElevatedTransparency" },
             Parent = box,
         })
@@ -235,8 +245,8 @@ function DiscordBox:Render(parent, maid)
 
     local stats = Util.New("Frame", {
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, -18, 0, 27),
-        Position = UDim2.fromOffset(9, 51),
+        Position = UDim2.fromOffset(11, 59),
+        Size = UDim2.new(1, -22, 0, 27),
         Parent = box,
     })
     Util.List(stats, 6, Enum.FillDirection.Horizontal)
@@ -244,14 +254,14 @@ function DiscordBox:Render(parent, maid)
     local members = statCard(stats, 2, "users", "")
 
     local copy = Util.New("TextButton", {
-        Size = UDim2.new(1, -18, 0, 22),
-        Position = UDim2.fromOffset(9, 81),
+        Size = UDim2.new(1, -22, 0, 26),
+        Position = UDim2.fromOffset(11, 91),
         Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = "ElevatedTransparency" },
         Parent = box,
     })
     Util.Corner(5, copy)
     Util.Stroke(copy, "Stroke", function(t) return math.min(t.StrokeTransparency + 0.12, 0.92) end)
-    Util.Icon("copy", { Size = UDim2.fromOffset(11, 11), Position = UDim2.fromOffset(9, 5), Color = "TextMuted", Parent = copy })
+    Util.Icon("copy", { Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(10, 7), Color = "Accent", Parent = copy })
     local copyLabel = Util.Label({
         Text = self.Def.CopyText or self.Def.ButtonText or "Copy Discord invite",
         TextSize = 10,
