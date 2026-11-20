@@ -2493,22 +2493,49 @@ function Overlays:SetMobileButton(on)
     if on and not self.Mobile then
         local button = window.Maid:Give(Util.New("ImageButton", {
             Name = "MenuButton",
-            Size = UDim2.fromOffset(46, 46),
+            Size = UDim2.fromOffset(38, 38),
             Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = function(t) return math.min(t.SurfaceTransparency, 0.1) end },
             Parent = Layer.Hud,
         }))
         Util.Corner(UDim.new(1, 0), button)
-        Util.Stroke(button, "Accent", function() return 0.3 end, 1.5)
+        Util.Stroke(button, "Accent", function() return 0.22 end, 1.35)
+        local glow = Util.New("Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.new(1, 8, 1, 8), ZIndex = button.ZIndex - 1,
+            Theme = { BackgroundColor3 = "Accent", BackgroundTransparency = function() return 0.78 end },
+            Parent = button,
+        })
+        Util.Corner(UDim.new(1, 0), glow)
+        local logoShadow = Util.Icon(window.Def.Icon or "sparkles", {
+            Size = UDim2.fromOffset(25, 25), AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 1, 0.5, 2), ImageColor3 = Color3.new(0, 0, 0), ImageTransparency = 0.42,
+            Parent = button,
+        })
         local logo = Util.Icon(window.Def.Icon or "sparkles", {
-            Size = UDim2.fromOffset(20, 20),
+            Size = UDim2.fromOffset(24, 24),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.fromScale(0.5, 0.5),
             Theme = { ImageColor3 = function() return Color3.new(1, 1, 1) end },
             Parent = button,
         })
         Util.New("UIGradient", { Rotation = 45, Theme = { Color = function(t) return ColorSequence.new(t.Accent, t.AccentAlt) end }, Parent = logo })
+        local buttonScale = Util.New("UIScale", { Scale = 1, Parent = button })
+        local hover = false
+        button.MouseEnter:Connect(function() hover = true; Util.Tween(buttonScale, 0.12, { Scale = 1.08 }) end)
+        button.MouseLeave:Connect(function() hover = false; Util.Tween(buttonScale, 0.12, { Scale = 1 }) end)
+        local lastPulse = 0
+        window.Maid:Give(Services.RunService.Heartbeat:Connect(function()
+            if not button.Visible or hover then return end
+            local now = os.clock()
+            if now - lastPulse < 2.8 then return end
+            lastPulse = now
+            Util.Tween(buttonScale, 0.16, { Scale = 1.06 })
+            task.delay(0.18, function() if buttonScale.Parent and not hover then Util.Tween(buttonScale, 0.22, { Scale = 1 }) end end)
+        end))
         restore(window, "MobilePos", button, mobileHome)
         window.Maid:Give(Drag.Attach(button, button, {
+            Margin = 10,
+            Scale = function() return Layer.Scale end,
             OnEnd = function(moved)
                 if moved then
                     savePosition(window, "MobilePos", button)
@@ -4401,7 +4428,9 @@ function Window.new(library, def)
     self.Overlays = Overlays.new(self)
     self.Overlays:SetKeybindList(self.Interface.KeybindList)
     self.Overlays:SetWatermark(self.Interface.Watermark)
-    if UIS.TouchEnabled then self.Overlays:SetMobileButton(true) end
+    -- Keep the compact opener available on both PC and mobile.  Consumers can
+    -- still opt out with OpenButton = false.
+    if self.Def.OpenButton ~= false then self.Overlays:SetMobileButton(true) end
     self.Acrylic = Acrylic.new(self.Root, self.Maid)
     self.Acrylic.Shown = self.Visible
     self.Acrylic.Strength = tonumber(self.Interface.BlurStrength) or 12
@@ -4601,9 +4630,18 @@ function Window:_build()
     -- topbar ------------------------------------------------------------------
     local topbar = Util.New("Frame", { Name = "Topbar", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, TOP), Parent = root })
     self.Topbar = topbar
+    -- A soft duplicate behind the brand mark gives raster logos the same depth
+    -- as the old MacLib header without baking a shadow into every asset.
+    local logoShadow = Util.Icon(def.Icon or "sparkles", {
+        Size = UDim2.fromOffset(34, 34),
+        Position = UDim2.fromOffset(9, 10),
+        ImageColor3 = Color3.new(0, 0, 0),
+        ImageTransparency = 0.48,
+        Parent = topbar,
+    })
     local logo = Util.Icon(def.Icon or "sparkles", {
-        Size = UDim2.fromOffset(22, 22),
-        Position = UDim2.fromOffset(16, 14),
+        Size = UDim2.fromOffset(32, 32),
+        Position = UDim2.fromOffset(8, 8),
         Theme = { ImageColor3 = function() return Color3.new(1, 1, 1) end },
         Parent = topbar,
     })
@@ -4613,7 +4651,7 @@ function Window:_build()
         Parent = logo,
     })
 
-    local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(48, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
+    local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(50, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
     self.TitleHeading = heading
     Util.List(heading, 6, Enum.FillDirection.Horizontal, nil, Enum.VerticalAlignment.Center)
     local title = Util.Label({
@@ -4653,7 +4691,7 @@ function Window:_build()
         Text = def.Subtitle or def.SubTitle or "",
         TextSize = 11,
         Color = "TextMuted",
-        Position = UDim2.fromOffset(48, 27),
+        Position = UDim2.fromOffset(50, 27),
         Size = UDim2.new(0, 260, 0, 14),
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = topbar,
@@ -4885,12 +4923,31 @@ function Window:_build()
         end)
     end)
 
-    -- window drag by the topbar, not by its controls
-    self.Maid:Give(Drag.Attach(topbar, root, {
+    -- Drag from any quiet part of the window. Interactive controls and scroll
+    -- surfaces remain untouched so a slider/dropdown never moves the window.
+    self.Maid:Give(Drag.Attach(root, root, {
+        Margin = 24,
+        Scale = function() return self:GetScale() end,
         Enabled = function()
             if def.Draggable == false then return false end
             local point = Util.Pointer()
-            return not Util.Contains(actions, point)
+            if Util.Contains(actions, point) then return false end
+            local ok, objects = pcall(function()
+                local baseGui = root:FindFirstAncestorWhichIsA("BasePlayerGui")
+                return baseGui and baseGui:GetGuiObjectsAtPosition(point.X, point.Y) or {}
+            end)
+            if ok then
+                for _, object in ipairs(objects) do
+                    if object:IsDescendantOf(root) and (
+                        object:IsA("GuiButton")
+                        or object:IsA("TextBox")
+                        or object:IsA("ScrollingFrame")
+                    ) then
+                        return false
+                    end
+                end
+            end
+            return true
         end,
         OnEnd = function(moved)
             if not moved then return end
@@ -5009,8 +5066,91 @@ function Window:_userCard(parent)
     self.PaintUser()
     Util.Feedback(card, state)
     card.MouseButton1Click:Connect(function()
-        local user = self.Def.User
-        if type(user) == "table" and user.Callback then Util.Safe(user.Callback) end
+        local user = type(self.Def.User) == "table" and self.Def.User or {}
+        Popup.Open({
+            Anchor = card,
+            Width = 232,
+            Align = "Start",
+            Padding = 9,
+            Build = function(frame, popup)
+                local content = Util.New("Frame", {
+                    BackgroundTransparency = 1,
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    Parent = frame,
+                })
+                Util.List(content, 6, Enum.FillDirection.Vertical)
+
+                local profile = Util.New("Frame", {
+                    Size = UDim2.new(1, 0, 0, 48),
+                    LayoutOrder = 1,
+                    Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = function(t) return math.min(t.ElevatedTransparency + 0.08, 0.86) end },
+                    Parent = content,
+                })
+                Util.Corner(6, profile)
+                Util.Stroke(profile, self._premiumUser and "Warning" or "Stroke", 0.42)
+                local profileAvatar = Util.New("ImageLabel", {
+                    Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(7, 7),
+                    Image = avatar.Image, Theme = { BackgroundColor3 = "ElevatedHover" }, Parent = profile,
+                })
+                Util.Corner(UDim.new(1, 0), profileAvatar)
+                Util.Label({ Text = name.Text, TextSize = 12, Weight = Enum.FontWeight.Bold, Position = UDim2.fromOffset(49, 7), Size = UDim2.new(1, -57, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd, Parent = profile })
+                Util.Label({ Text = handle.Text .. "  •  " .. tierText.Text, TextSize = 9, Color = self._premiumUser and "Warning" or "TextMuted", Position = UDim2.fromOffset(49, 24), Size = UDim2.new(1, -57, 0, 14), TextTruncate = Enum.TextTruncate.AtEnd, Parent = profile })
+
+                local order = 2
+                local function action(iconName, titleText, hint, callback, danger)
+                    local hover = { Hover = false }
+                    local button = Util.New("TextButton", {
+                        Size = UDim2.new(1, 0, 0, 34), LayoutOrder = order,
+                        Theme = {
+                            BackgroundColor3 = danger and "Danger" or "Surface",
+                            BackgroundTransparency = function(t) return hover.Hover and math.min(t.ElevatedTransparency + 0.02, 0.78) or math.min(t.ElevatedTransparency + 0.16, 0.9) end,
+                        },
+                        Parent = content,
+                    })
+                    order += 1
+                    Util.Corner(6, button)
+                    Util.Icon(iconName, { Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(9, 10), Color = danger and "DangerText" or "TextDim", Parent = button })
+                    Util.Label({ Text = titleText, TextSize = 11, Weight = Enum.FontWeight.Medium, Color = danger and "DangerText" or "Text", Position = UDim2.fromOffset(31, 0), Size = UDim2.new(1, -82, 1, 0), Parent = button })
+                    Util.Label({ Text = hint or "", TextSize = 9, Color = "TextMuted", TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -48, 0, 0), Size = UDim2.fromOffset(40, 34), Parent = button })
+                    Util.Feedback(button, hover)
+                    button.MouseButton1Click:Connect(function()
+                        popup:Close()
+                        callback()
+                    end)
+                end
+
+                action("palette", "Interface settings", "›", function()
+                    for _, tab in ipairs(self.Tabs) do
+                        local title = string.lower(tostring(tab.Title or tab.Name or tab.Id or ""))
+                        if title == "settings" or title == "cài đặt" or title == "configuration" then
+                            self:SelectTab(tab)
+                            break
+                        end
+                    end
+                end)
+                action("panel-left-close", "Compact sidebar", self.Interface.Compact and "ON" or "OFF", function()
+                    self:SetCompact(not self.Interface.Compact)
+                end)
+                action("scan", "Menu scale", math.floor((self.Interface.Scale or 1) * 100 + 0.5) .. "%", function()
+                    local current = self.Interface.Scale or 1
+                    local nextScale = current < 0.95 and 1 or (current < 1.05 and 1.1 or 0.9)
+                    self:SetScale(nextScale)
+                end)
+                action("user-round-x", "Anonymous profile", self.Interface.HideUser and "ON" or "OFF", function()
+                    self.Interface.HideUser = not self.Interface.HideUser
+                    self.PaintUser()
+                    self:SaveState()
+                end)
+                action("eye-off", "Hide menu", Util.KeyLabel(self.MenuBinding and self.MenuBinding.Key), function()
+                    self:SetVisible(false)
+                end)
+                if type(user.Callback) == "function" then
+                    action("sparkles", "Profile action", "›", function() Util.Safe(user.Callback) end)
+                end
+                action("power", "Unload script", "", function() self.Library:Unload() end, true)
+            end,
+        })
     end)
     self.UserCard = card
     self.UserLabels = { name, handle, tierText }
@@ -8518,7 +8658,7 @@ end
 function DiscordBox:Render(parent, maid)
     local box = maid:Give(Util.New("Frame", {
         Name = "DiscordBox",
-        Size = UDim2.new(1, 0, 0, 108),
+        Size = UDim2.new(1, 0, 0, 122),
         Visible = self.Visible,
         Theme = {
             BackgroundColor3 = "Elevated",
@@ -8528,16 +8668,26 @@ function DiscordBox:Render(parent, maid)
     }))
     Util.Corner(7, box)
     Util.Stroke(box)
+    local accent = Util.New("Frame", {
+        Size = UDim2.new(0, 3, 1, -14), Position = UDim2.fromOffset(0, 7),
+        Theme = { BackgroundColor3 = "Accent" }, Parent = box,
+    })
+    Util.Corner(UDim.new(1, 0), accent)
+    Util.New("UIGradient", {
+        Rotation = 90,
+        Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 0.55) }),
+        Parent = accent,
+    })
 
     local iconHolder = Util.New("Frame", {
-        Size = UDim2.fromOffset(38, 38),
-        Position = UDim2.fromOffset(9, 9),
+        Size = UDim2.fromOffset(42, 42),
+        Position = UDim2.fromOffset(11, 10),
         Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = "ElevatedTransparency" },
         Parent = box,
     })
     Util.Corner(7, iconHolder)
     local icon = Util.Icon(self.Def.Icon or "message-circle", {
-        Size = UDim2.fromOffset(28, 28),
+        Size = UDim2.fromOffset(32, 32),
         Position = UDim2.fromOffset(5, 5),
         Color = "Text",
         Parent = iconHolder,
@@ -8545,10 +8695,10 @@ function DiscordBox:Render(parent, maid)
 
     local title = Util.Label({
         Text = self.Title,
-        TextSize = 12,
+        TextSize = 13,
         Weight = Enum.FontWeight.SemiBold,
         Size = UDim2.new(1, -98, 0, 17),
-        Position = UDim2.fromOffset(55, 9),
+        Position = UDim2.fromOffset(61, 10),
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = box,
     })
@@ -8557,7 +8707,7 @@ function DiscordBox:Render(parent, maid)
         TextSize = 10,
         Color = "TextMuted",
         Size = UDim2.new(1, -98, 0, 15),
-        Position = UDim2.fromOffset(55, 27),
+        Position = UDim2.fromOffset(61, 29),
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = box,
     })
@@ -8566,7 +8716,7 @@ function DiscordBox:Render(parent, maid)
     if self.Invite ~= "" or self.Def.RefreshCallback or self.Def.OnRefresh then
         refresh = Util.New("TextButton", {
             Size = UDim2.fromOffset(28, 28),
-            Position = UDim2.new(1, -37, 0, 12),
+            Position = UDim2.new(1, -39, 0, 14),
             Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = "ElevatedTransparency" },
             Parent = box,
         })
@@ -8578,8 +8728,8 @@ function DiscordBox:Render(parent, maid)
 
     local stats = Util.New("Frame", {
         BackgroundTransparency = 1,
-        Size = UDim2.new(1, -18, 0, 27),
-        Position = UDim2.fromOffset(9, 51),
+        Position = UDim2.fromOffset(11, 59),
+        Size = UDim2.new(1, -22, 0, 27),
         Parent = box,
     })
     Util.List(stats, 6, Enum.FillDirection.Horizontal)
@@ -8587,14 +8737,14 @@ function DiscordBox:Render(parent, maid)
     local members = statCard(stats, 2, "users", "")
 
     local copy = Util.New("TextButton", {
-        Size = UDim2.new(1, -18, 0, 22),
-        Position = UDim2.fromOffset(9, 81),
+        Size = UDim2.new(1, -22, 0, 26),
+        Position = UDim2.fromOffset(11, 91),
         Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = "ElevatedTransparency" },
         Parent = box,
     })
     Util.Corner(5, copy)
     Util.Stroke(copy, "Stroke", function(t) return math.min(t.StrokeTransparency + 0.12, 0.92) end)
-    Util.Icon("copy", { Size = UDim2.fromOffset(11, 11), Position = UDim2.fromOffset(9, 5), Color = "TextMuted", Parent = copy })
+    Util.Icon("copy", { Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(10, 7), Color = "Accent", Parent = copy })
     local copyLabel = Util.Label({
         Text = self.Def.CopyText or self.Def.ButtonText or "Copy Discord invite",
         TextSize = 10,
