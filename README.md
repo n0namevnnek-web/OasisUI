@@ -1,8 +1,8 @@
 # OasisUI
 
-[![Release](https://img.shields.io/github/v/release/Mold53/OasisUI?label=release&color=4e84ff)](https://github.com/Mold53/OasisUI/releases/latest)
-[![CI](https://github.com/Mold53/OasisUI/actions/workflows/ci.yml/badge.svg)](https://github.com/Mold53/OasisUI/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/github/license/Mold53/OasisUI?color=4e84ff)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/n0namevnnek-web/OasisUI?label=release&color=4e84ff)](https://github.com/n0namevnnek-web/OasisUI/releases/latest)
+[![CI](https://github.com/n0namevnnek-web/OasisUI/actions/workflows/ci.yml/badge.svg)](https://github.com/n0namevnnek-web/OasisUI/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/n0namevnnek-web/OasisUI?color=4e84ff)](LICENSE)
 
 OasisUI is a Roblox UI library for executor scripts, built for large hubs: module cards with a switch and a
 key pill whose settings fold out below, two scrolling columns per tab with drag-to-rearrange cards, sub-tabs,
@@ -11,7 +11,7 @@ favorites, global search, floating panels, a live theme editor, a config manager
 ## Showcase
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Mold53/OasisUI/main/examples/Example.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/main/examples/Example.lua"))()
 ```
 
 The showcase ([examples/Example.lua](examples/Example.lua)) is a mock script hub (aimbot, ESP, player and
@@ -23,16 +23,16 @@ in the game.
 Pin a version for scripts you ship. A tag's file never changes after it is published:
 
 ```lua
-local OasisUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mold53/OasisUI/v1.9.0/dist/OasisUI.lua"))()
+local OasisUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/v1.9.0/dist/OasisUI.lua"))()
 ```
 
 | Source | URL |
 | --- | --- |
-| Pinned (tag) | `https://raw.githubusercontent.com/Mold53/OasisUI/v1.9.0/dist/OasisUI.lua` |
-| Pinned (tag, mirror) | `https://cdn.jsdelivr.net/gh/Mold53/OasisUI@v1.9.0/dist/OasisUI.lua` |
-| Release asset | `https://github.com/Mold53/OasisUI/releases/download/v1.9.0/OasisUI.lua` |
-| Latest release | `https://github.com/Mold53/OasisUI/releases/latest/download/OasisUI.lua` |
-| Development (`main`) | `https://raw.githubusercontent.com/Mold53/OasisUI/main/dist/OasisUI.lua` |
+| Pinned (tag) | `https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/v1.9.0/dist/OasisUI.lua` |
+| Pinned (tag, mirror) | `https://cdn.jsdelivr.net/gh/n0namevnnek-web/OasisUI@v1.9.0/dist/OasisUI.lua` |
+| Release asset | `https://github.com/n0namevnnek-web/OasisUI/releases/download/v1.9.0/OasisUI.lua` |
+| Latest release | `https://github.com/n0namevnnek-web/OasisUI/releases/latest/download/OasisUI.lua` |
+| Development (`main`) | `https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/main/dist/OasisUI.lua` |
 
 All pinned sources serve the same file. Release asset links answer with a redirect, and some executors' `HttpGet`
 does not follow it (an empty or HTML body); the tag links serve the file directly. The first line of the file is
@@ -43,7 +43,7 @@ does not follow it (an empty or HTML body); the tag links serve the file directl
 ## Quick start
 
 ```lua
-local OasisUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mold53/OasisUI/v1.9.0/dist/OasisUI.lua"))()
+local OasisUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/v1.9.0/dist/OasisUI.lua"))()
 
 local Window = OasisUI:CreateWindow({ Title = "Oasis", Subtitle = "Universal", Folder = "Oasis" })
 local Combat = Window:Tab({ Title = "Combat", Icon = "crosshair" })
@@ -83,8 +83,8 @@ Aimbot:Slider({ Title = "FOV", Min = 10, Max = 500, Default = 120, Suffix = " px
   Slider and RangeSlider, Dropdown (single or multi, search, descriptions, icons, refresh), Input (text or
   number, validation, multiline), Keybind, ColorPicker (HSV, alpha, hex, RGB, rainbow, copy/paste),
   Segmented, Group (collapsible sub-list), Label (with a live, coloured value), Paragraph, Divider, Spacer,
-  ProgressBar, Image, Code (a short preview; a click opens the whole text, optionally editable) and Log
-  (scrolling list of lines).
+  ProgressBar, Image, Code (a short preview; a click opens the whole text, optionally editable), Log
+  (scrolling list of lines) and DiscordBox (community invite, member statistics, refresh and copy actions).
   - **Slider extras**: the value is editable in the title line, `−`/`+` steppers, `From`/`To` icons, and
     min/max labels.
 - **Element states**: every element supports `Locked` (with a reason tooltip), `Visible`, and
@@ -232,6 +232,28 @@ break the menu; one that does not yield has finished before the library goes on.
 | `Spacer` | `Height` | |
 | `Image` | `Image`, `Height` or `AspectRatio`, `Radius`, `ScaleType` | |
 | `Code` | `Code`, `Lines` (preview, default 6), `Editable`, `OnSave(text) -> ok, message` (`false` keeps the editor open), `OnCopy()` | `Open()` |
+| `DiscordBox` | `Title`, `Description`, `Icon`, `Invite`, `Online`, `Members`, `CopyText`, `RefreshCallback(box)` | `SetInvite(url)`, `SetStats(online, members)`, `Refresh()`, `Copy()` |
+
+### Discord community card
+
+```lua
+local community = Tab:Section({ Title = "Community", Icon = "message-circle" })
+
+local discord = community:DiscordBox({
+    Title = "NNVN Community",
+    Description = "Updates, support and announcements",
+    Icon = "rbxassetid://83451581365613",
+    Invite = "https://discord.gg/5JJAuHRUgJ",
+    Online = 386,
+    Members = 5811,
+    RefreshCallback = function(box)
+        -- Fetch counts with your own endpoint, then update the card.
+        box:SetStats(386, 5811)
+    end,
+})
+
+discord:SetStats(400, 6000)
+```
 
 ## Panels
 
