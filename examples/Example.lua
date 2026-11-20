@@ -1,12 +1,12 @@
 --[[
     OasisUI showcase: a mock script hub plus every element with every option.
 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Mold53/OasisUI/main/examples/Example.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/main/examples/Example.lua"))()
 
     All features are dummies. Nothing touches the game; callbacks only write to the event log on the Overview tab.
 ]]
 
-local SOURCE = "https://raw.githubusercontent.com/Mold53/OasisUI/main/dist/OasisUI.lua"
+local SOURCE = "https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/main/dist/OasisUI.lua"
 local OasisUI = getgenv().OasisUI_Dev or loadstring(game:HttpGet(SOURCE))()
 
 local Players = game:GetService("Players")
@@ -114,7 +114,22 @@ do
     end })
     quick:Code({
         Title = "Load this showcase",
-        Code = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Mold53/OasisUI/main/examples/Example.lua"))()',
+        Code = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/n0namevnnek-web/OasisUI/main/examples/Example.lua"))()',
+    })
+
+    local community = Overview:Section({ Title = "Community", Icon = "message-circle", Side = "Right" })
+    community:DiscordBox({
+        Title = "NNVN Community",
+        Description = "Updates, support and announcements",
+        Icon = "rbxassetid://83451581365613",
+        Invite = "https://discord.gg/5JJAuHRUgJ",
+        Online = 386,
+        Members = 5811,
+        RefreshCallback = function(box)
+            -- Replace these demo values with counts returned by your own endpoint.
+            box:SetStats(386, 5811)
+            event("Discord", "stats refreshed")
+        end,
     })
 end
 
