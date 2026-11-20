@@ -111,12 +111,32 @@ end
 
 Util.Icons = Icons
 
+-- Compatibility aliases used by Lucide-based hubs. Oasis intentionally ships a
+-- compact icon set, so resolve common full-set names to the closest bundled
+-- glyph instead of silently rendering an empty ImageLabel.
+local IconAliases = {
+    ["badge-info"] = "info",
+    ["chart-no-axes-column-increasing"] = "chart-bar",
+    ["home"] = "house",
+    ["list-checks"] = "check-check",
+    ["locate-fixed"] = "crosshair",
+    ["map-pin"] = "map",
+    ["messages-square"] = "message-square",
+    ["move-3d"] = "move",
+    ["package-open"] = "package",
+    ["scan-eye"] = "scan",
+    ["scroll-text"] = "file-text",
+    ["ticket-check"] = "badge-check",
+    ["user-round-check"] = "badge-check",
+    ["users-round"] = "users",
+}
+
 function Util.IconId(icon)
     if icon == nil or icon == "" then return nil end
     if type(icon) == "number" then return "rbxassetid://" .. icon end
     if icon:find("^%a+://") then return icon end
     if icon:match("^%d+$") then return "rbxassetid://" .. icon end
-    return Icons[icon]
+    return Icons[icon] or Icons[IconAliases[icon]] or Icons.circle
 end
 
 function Util.Icon(icon, props)
