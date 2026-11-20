@@ -1026,7 +1026,9 @@ local function screen(name, order)
     local gui = Util.New("ScreenGui", {
         Name = name,
         ResetOnSpawn = false,
-        IgnoreGuiInset = false,
+        -- Use the whole Roblox viewport.  This lets compact/open buttons reach
+        -- the real top edge instead of stopping below the CoreGui top bar.
+        IgnoreGuiInset = true,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         DisplayOrder = order,
     })
@@ -1067,7 +1069,8 @@ function Layer.SetScale(scale)
     end
 end
 
--- usable gui area (screen minus the topbar inset); AbsolutePosition and input positions share this space
+-- Full viewport used by every Oasis layer; AbsolutePosition and input
+-- positions share this space because all three ScreenGuis ignore the inset.
 function Layer.Bounds()
     if Layer.Main then return Layer.Main.AbsoluteSize end
     return workspace.CurrentCamera.ViewportSize
@@ -5346,13 +5349,38 @@ function Window:SetFitScreen(on)
     self:_fitScale()
 end
 
--- keeps at least part of the window on screen after a resolution change
-function Window:_clampRoot()
+-- Keeps the window on screen. `full` is used while restoring from the compact
+-- bar so expanding never grows above or beyond the viewport. `wantedSize`
+-- lets us clamp for the future expanded size before its tween starts.
+function Window:_clampRoot(full, wantedSize)
     local root, bounds = self.Root, Layer.Bounds()
-    local position, size = root.AbsolutePosition, root.AbsoluteSize
-    local dx = math.clamp(position.X, 60 - size.X, bounds.X - 60) - position.X
-    local dy = math.clamp(position.Y, 0, bounds.Y - 60) - position.Y
-    if dx ~= 0 or dy ~= 0 then root.Position += UDim2.fromOffset(dx, dy) end
+    local scale = self:GetScale()
+    local shownSize = root.AbsoluteSize
+    local size = shownSize
+    local position = root.AbsolutePosition
+
+    if wantedSize then
+        size = Vector2.new(wantedSize.X.Offset * scale, wantedSize.Y.Offset * scale)
+        local center = position + shownSize / 2
+        position = center - size / 2
+    end
+
+    local function axis(value, length, bound, keep)
+        if full then
+            if length <= bound then return math.clamp(value, 0, bound - length) end
+            return (bound - length) / 2
+        end
+        return math.clamp(value, keep - length, bound - keep)
+    end
+
+    local keep = 60
+    local nextX = axis(position.X, size.X, bounds.X, keep)
+    local nextY = full and axis(position.Y, size.Y, bounds.Y, keep)
+        or math.clamp(position.Y, 0, bounds.Y - keep)
+    local delta = Vector2.new(nextX - position.X, nextY - position.Y)
+    if delta.Magnitude > 0.01 then
+        root.Position += UDim2.fromOffset(delta.X / scale, delta.Y / scale)
+    end
 end
 
 function Window:SetMinimized(minimized)
@@ -5366,15 +5394,31 @@ function Window:SetMinimized(minimized)
         self.Actions.Search.Visible = false
         self.SubtitleLabel.Visible = false
         local width = math.max(self.TitleLabel.Parent.AbsoluteSize.X / self:GetScale() + 48 + 90, 240)
-        Util.Tween(root, 0.35, { Size = UDim2.fromOffset(width, TOP) })
+        local tween = Util.Tween(root, 0.35, { Size = UDim2.fromOffset(width, TOP) })
+        if tween then
+            tween.Completed:Once(function()
+                if self.Minimized then self:_clampRoot(true) end
+            end)
+        else
+            self:_clampRoot(true)
+        end
         self.MinimizeIcon.Image = Util.IconId("maximize-2")
     else
-        local tween = Util.Tween(root, 0.35, { Size = self._restoreSize or root.Size })
+        local restoreSize = self._restoreSize or root.Size
+        -- Move the compact bar's centre first using the expanded bounds. This
+        -- prevents the grow animation from spilling above the screen.
+        self:_clampRoot(true, restoreSize)
+        local tween = Util.Tween(root, 0.35, { Size = restoreSize })
         local function show()
             self.Sidebar.Visible, self.Content.Visible, self.SideDivider.Visible = true, true, true
             self.TopDivider.Visible, self.Grip.Visible = true, self.Def.Resizable ~= false
             self.Actions.Search.Visible = self.Def.Search ~= false
             self.SubtitleLabel.Visible = true
+            self:_clampRoot(true)
+            local bounds = Layer.Bounds()
+            local center = root.AbsolutePosition + root.AbsoluteSize / 2
+            self.Interface.Position = { math.floor(center.X - bounds.X / 2), math.floor(center.Y - bounds.Y / 2) }
+            self:SaveState()
         end
         if tween then tween.Completed:Once(show) else show() end
         self.MinimizeIcon.Image = Util.IconId("minus")
@@ -6196,8 +6240,7 @@ function Drag.Topmost(candidates, point)
     if #candidates < 2 then return candidates[1] end
     local root = candidates[1]:FindFirstAncestorWhichIsA("BasePlayerGui")
     if root then
-        local inset = Services.GuiService:GetGuiInset()
-        local ok, objects = pcall(root.GetGuiObjectsAtPosition, root, point.X + inset.X, point.Y + inset.Y)
+        local ok, objects = pcall(root.GetGuiObjectsAtPosition, root, point.X, point.Y)
         if ok then
             -- topmost first; any part of a moved frame (its background too) covers what lies below
             for _, object in objects do
@@ -7497,10 +7540,11 @@ function Util.IsPress(input)
     return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
 end
 
--- pointer in AbsolutePosition space (below the topbar inset)
+-- Pointer in full-screen AbsolutePosition space. Oasis ScreenGuis use
+-- IgnoreGuiInset, so subtracting the CoreGui inset would offset desktop drags.
 function Util.Pointer(input)
     if input then return Vector2.new(input.Position.X, input.Position.Y) end
-    return Services.UserInputService:GetMouseLocation() - Services.GuiService:GetGuiInset()
+    return Services.UserInputService:GetMouseLocation()
 end
 
 function Util.Contains(gui, point)
