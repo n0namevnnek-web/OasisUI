@@ -700,6 +700,7 @@ local KINDS = {
     Segmented = { "Segmented" },
     Group = { "Group" },
     Image = { "Image" },
+    MediaBox = { "MediaBox" },
     Code = { "Code" },
     Log = { "Log" },
     DiscordBox = { "DiscordBox" },
@@ -4510,6 +4511,48 @@ local function iconButton(parent, icon, order, tip)
     return button, image
 end
 
+function Window:_addTitleTag(tag)
+    if not self.TitleHeading then return nil end
+    tag = type(tag) == "string" and { Text = tag } or (tag or {})
+    self._titleTagCount = (self._titleTagCount or 0) + 1
+    local custom = tag.Color or tag.BackgroundColor
+    local chip = Util.New("Frame", {
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.fromOffset(0, 17),
+        LayoutOrder = 1 + self._titleTagCount,
+        Theme = custom and nil or { BackgroundColor3 = "Elevated" },
+        BackgroundColor3 = custom,
+        BackgroundTransparency = tag.BackgroundTransparency or 0,
+        Parent = self.TitleHeading,
+    })
+    Util.Corner(tag.Radius or 4, chip)
+    Util.Padding(chip, 0, 6, 0, 6)
+    local row = Util.New("Frame", { BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), Parent = chip })
+    Util.List(row, 4, Enum.FillDirection.Horizontal, nil, Enum.VerticalAlignment.Center)
+    if tag.Icon then
+        Util.Icon(tag.Icon, {
+            Size = UDim2.fromOffset(11, 11),
+            ImageColor3 = tag.IconColor or tag.TextColor or Color3.new(1, 1, 1),
+            LayoutOrder = 1,
+            Parent = row,
+        })
+    end
+    Util.Label({
+        Text = tag.Text or tag.Title or "",
+        TextSize = 10,
+        Weight = Enum.FontWeight.SemiBold,
+        TextColor3 = tag.TextColor,
+        Color = tag.TextColor and nil or (custom and "OnAccent" or "TextDim"),
+        AutomaticSize = Enum.AutomaticSize.X,
+        Size = UDim2.fromScale(0, 1),
+        LayoutOrder = 2,
+        Parent = row,
+    })
+    self._titleTags = self._titleTags or {}
+    table.insert(self._titleTags, chip)
+    return chip
+end
+
 function Window:_build()
     local def = self.Def
     local size = def.Size or UDim2.fromOffset(780, 520)
@@ -4571,6 +4614,7 @@ function Window:_build()
     })
 
     local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(48, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
+    self.TitleHeading = heading
     Util.List(heading, 6, Enum.FillDirection.Horizontal, nil, Enum.VerticalAlignment.Center)
     local title = Util.Label({
         Text = def.Title or "OasisUI",
@@ -4604,28 +4648,7 @@ function Window:_build()
         titleStep = now
         titleGradient.Offset = Vector2.new(math.sin(now * 1.3) * 0.5, 0)
     end))
-    for index, tag in def.Tags or {} do
-        tag = type(tag) == "string" and { Text = tag } or tag
-        local chip = Util.New("Frame", {
-            AutomaticSize = Enum.AutomaticSize.X,
-            Size = UDim2.fromOffset(0, 16),
-            LayoutOrder = 1 + index,
-            Theme = if tag.Color then nil else { BackgroundColor3 = "Elevated" },
-            BackgroundColor3 = tag.Color,
-            Parent = heading,
-        })
-        Util.Corner(4, chip)
-        Util.Padding(chip, 0, 6, 0, 6)
-        Util.Label({
-            Text = tag.Text or tag.Title or "",
-            TextSize = 10,
-            Weight = Enum.FontWeight.SemiBold,
-            Color = tag.Color and "OnAccent" or "TextDim",
-            AutomaticSize = Enum.AutomaticSize.X,
-            Size = UDim2.fromScale(0, 1),
-            Parent = chip,
-        })
-    end
+    for _, tag in def.Tags or {} do self:_addTitleTag(tag) end
     self.SubtitleLabel = Util.Label({
         Text = def.Subtitle or def.SubTitle or "",
         TextSize = 11,
@@ -4892,7 +4915,7 @@ function Window:_userCard(parent)
     local state = { Hover = false }
     local card = Util.New("TextButton", {
         Name = "User",
-        Size = UDim2.new(1, 0, 0, 42),
+        Size = UDim2.new(1, 0, 0, 66),
         LayoutOrder = 2,
         Theme = {
             BackgroundColor3 = "Elevated",
@@ -4900,18 +4923,59 @@ function Window:_userCard(parent)
         },
         Parent = parent,
     })
-    Util.Corner(8, card)
+    Util.Corner(7, card)
     local avatar = Util.New("ImageLabel", {
-        Size = UDim2.fromOffset(28, 28),
-        Position = UDim2.new(0, 7, 0.5, -14),
+        Size = UDim2.fromOffset(30, 30),
+        Position = UDim2.fromOffset(8, 8),
         BackgroundTransparency = 0,
         Theme = { BackgroundColor3 = "ElevatedHover" },
         Parent = card,
     })
     Util.Corner(UDim.new(1, 0), avatar)
     local placeholder = Util.Icon("user", { Size = UDim2.fromOffset(14, 14), Position = UDim2.fromOffset(7, 7), Color = "TextMuted", Parent = avatar })
-    local name = Util.Label({ TextSize = 12, Weight = Enum.FontWeight.SemiBold, Position = UDim2.fromOffset(42, 7), Size = UDim2.new(1, -48, 0, 15), TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
-    local handle = Util.Label({ TextSize = 10, Color = "TextMuted", Position = UDim2.fromOffset(42, 22), Size = UDim2.new(1, -48, 0, 12), TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+    local name = Util.Label({ TextSize = 12, Weight = Enum.FontWeight.SemiBold, Position = UDim2.fromOffset(46, 7), Size = UDim2.new(1, -54, 0, 15), TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+    local handle = Util.Label({ TextSize = 9, Color = "TextMuted", Position = UDim2.fromOffset(46, 22), Size = UDim2.new(1, -54, 0, 12), TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+    local tier = Util.New("Frame", {
+        Position = UDim2.fromOffset(8, 43),
+        Size = UDim2.new(1, -16, 0, 16),
+        BackgroundColor3 = Color3.fromRGB(15, 17, 22),
+        Parent = card,
+    })
+    Util.Corner(3, tier)
+    local tierStroke = Util.New("UIStroke", { Color = Color3.fromRGB(72, 77, 88), Transparency = 0.35, Thickness = 1, Parent = tier })
+    local tierGradient = Util.New("UIGradient", {
+        Enabled = false,
+        Color = ColorSequence.new(Color3.fromRGB(116, 74, 7), Color3.fromRGB(250, 194, 51)),
+        Rotation = 10,
+        Parent = tier,
+    })
+    local tierText = Util.Label({
+        Text = "FREE USER",
+        TextSize = 9,
+        Weight = Enum.FontWeight.Bold,
+        Color = Color3.fromRGB(205, 209, 219),
+        Size = UDim2.fromScale(1, 1),
+        TextXAlignment = Enum.TextXAlignment.Center,
+        Parent = tier,
+    })
+    local sparkle = Util.Label({
+        Text = "✦",
+        TextSize = 10,
+        Color = Color3.fromRGB(255, 242, 166),
+        Position = UDim2.new(1, -18, 0, 0),
+        Size = UDim2.fromOffset(14, 16),
+        Visible = false,
+        Parent = tier,
+    })
+    local sparkleLeft = Util.Label({
+        Text = "·",
+        TextSize = 13,
+        Color = Color3.fromRGB(255, 232, 137),
+        Position = UDim2.fromOffset(7, -1),
+        Size = UDim2.fromOffset(12, 16),
+        Visible = false,
+        Parent = tier,
+    })
     local thumbnail
     task.spawn(function()
         local ok, result = pcall(Services.Players.GetUserThumbnailAsync, Services.Players, player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
@@ -4930,6 +4994,17 @@ function Window:_userCard(parent)
         if hidden or self.Interface.HideAvatar or image == false then image = nil end
         avatar.Image = image and Util.IconId(image) or ""
         placeholder.Visible = avatar.Image == ""
+        local access = string.upper(tostring(user.Tier or user.Access or (user.Premium and "PREMIUM") or "FREE"))
+        local premium = access == "PREMIUM" or access == "PREMIUM USER"
+        tierText.Text = premium and "PREMIUM USER" or "FREE USER"
+        tierText.TextColor3 = premium and Color3.fromRGB(255, 248, 218) or Color3.fromRGB(205, 209, 219)
+        tier.BackgroundColor3 = premium and Color3.fromRGB(124, 80, 8) or Color3.fromRGB(15, 17, 22)
+        tierStroke.Color = premium and Color3.fromRGB(255, 205, 67) or Color3.fromRGB(72, 77, 88)
+        tierStroke.Transparency = premium and 0.12 or 0.35
+        tierGradient.Enabled = premium
+        sparkle.Visible = premium
+        sparkleLeft.Visible = premium
+        self._premiumUser = premium
     end
     self.PaintUser()
     Util.Feedback(card, state)
@@ -4938,14 +5013,21 @@ function Window:_userCard(parent)
         if type(user) == "table" and user.Callback then Util.Safe(user.Callback) end
     end)
     self.UserCard = card
-    self.UserLabels = { name, handle }
+    self.UserLabels = { name, handle, tierText }
+    self.Maid:Give(Services.RunService.Heartbeat:Connect(function()
+        if not self._premiumUser or not self.Visible then return end
+        local now = os.clock()
+        tierGradient.Offset = Vector2.new(math.sin(now * 1.35) * 0.32, 0)
+        sparkle.TextTransparency = 0.12 + (math.sin(now * 3.1) + 1) * 0.28
+        sparkleLeft.TextTransparency = 0.18 + (math.cos(now * 2.7) + 1) * 0.3
+    end))
 end
 
 -- shows or hides the profile card and sizes the tab list around it
 function Window:_layoutSidebar()
     local showUser = self.UserCard ~= nil and self.Interface.ShowUser ~= false
     if self.UserCard then self.UserCard.Visible = showUser end
-    local height = showUser and 94 or 46
+    local height = showUser and 118 or 46
     self.SidebarBottom.Size = UDim2.new(1, 0, 0, height)
     self.TabList.Size = UDim2.new(1, 0, 1, -height)
 end
@@ -5214,6 +5296,12 @@ function Window:SetSubtitle(text)
     self.SubtitleLabel.Text = text
 end
 
+-- MacLib-compatible title badge. Native Oasis windows may also pass Tags in
+-- CreateWindow; this method supports tags added after the window is created.
+function Window:Tag(def)
+    return self:_addTitleTag(def)
+end
+
 -- tabs ------------------------------------------------------------------------
 
 function Window:Tab(def)
@@ -5237,6 +5325,27 @@ function Window:Tab(def)
     return tab
 end
 Window.AddTab = Window.Tab
+
+-- Compatibility navigation group. Existing tabs can be placed under a visual
+-- sidebar caption with group:Add(tab, title, icon); newly created tabs use
+-- group:AddTab(def).
+function Window:NavigationGroup(def)
+    def = type(def) == "string" and { Title = def } or (def or {})
+    self:TabSection(def.Title or "Group")
+    local group = { Window = self }
+    function group:Add(tab, title, icon)
+        if not tab then return nil end
+        self.Window._order = (self.Window._order or 0) + 1
+        if tab.Entry and tab.Entry.Button then tab.Entry.Button.LayoutOrder = self.Window._order end
+        if title and tab.Entry and tab.Entry.Label then tab.Entry.Label.Text = title end
+        if icon and tab.Entry and tab.Entry.Icon then tab.Entry.Icon.Image = Util.IconId(icon) or tab.Entry.Icon.Image end
+        return tab
+    end
+    function group:AddTab(tabDef)
+        return self.Window:AddTab(tabDef)
+    end
+    return group
+end
 
 -- sidebar caption between tab groups
 function Window:TabSection(text)
@@ -5464,6 +5573,18 @@ end
 
 function Window:Notify(options)
     return self.Library:Notify(options)
+end
+
+-- Lightweight activity registry used by migrated hubs. It intentionally does
+-- not create noisy notifications every time a toggle changes.
+function Window:SetActivity(title, enabled, description)
+    self.Activity = self.Activity or {}
+    self.Activity[title] = enabled and {
+        Title = title,
+        Description = description,
+        StartedAt = os.clock(),
+    } or nil
+    return self.Activity[title]
 end
 
 -- floating window with elements; see Components/Panel
@@ -7317,6 +7438,16 @@ end
 
 function Base:Set(value, silent)
     self:_commit(value, silent)
+end
+
+-- MacLib/Fluent compatibility. Keep this as a forwarding method instead of
+-- an alias so specialised element Set methods still receive the call.
+function Base:SetValue(value, silent)
+    return self:Set(value, silent)
+end
+
+function Base:GetValue()
+    return self:Get()
 end
 
 function Base:Reset()
@@ -9693,6 +9824,73 @@ end
 return Log
 end
 
+__modules["Elements/MediaBox"] = function(...)
+local import = ...
+local Base = import("Elements/Base")
+local Util = import("Core/Util")
+
+-- A compact image card used by migrated MacLib hubs.
+local MediaBox = Base.Class("MediaBox")
+
+function MediaBox.new(container, def)
+    local self = setmetatable({}, MediaBox)
+    Base.Init(self, container, def)
+    self.NoSave = true
+    return self
+end
+
+function MediaBox:Matches(query)
+    local def = self.Def
+    return (tostring(def.Title or "") .. " " .. tostring(def.Description or "")):lower():find(query, 1, true) ~= nil
+end
+
+function MediaBox:Render(parent, maid)
+    local def = self.Def
+    local frame = maid:Give(Util.New("Frame", {
+        Name = "MediaBox",
+        Size = UDim2.new(1, 0, 0, def.Height or 76),
+        Theme = { BackgroundColor3 = "Elevated", BackgroundTransparency = "ElevatedTransparency" },
+        Visible = self.Visible,
+        Parent = parent,
+    }))
+    Util.Corner(8, frame)
+    Util.Stroke(frame)
+
+    local image = Util.New("ImageLabel", {
+        Size = UDim2.fromOffset(54, 54),
+        Position = UDim2.fromOffset(10, 11),
+        Image = Util.IconId(def.Image or def.Icon or def.FallbackIcon or "image") or "",
+        ScaleType = Enum.ScaleType.Crop,
+        Theme = { BackgroundColor3 = "ElevatedHover" },
+        Parent = frame,
+    })
+    Util.Corner(7, image)
+
+    Util.Label({
+        Text = def.Title or "Media",
+        TextSize = 14,
+        Weight = Enum.FontWeight.SemiBold,
+        Position = UDim2.fromOffset(76, 12),
+        Size = UDim2.new(1, -88, 0, 20),
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        Parent = frame,
+    })
+    Util.Label({
+        Text = def.Description or def.Content or "",
+        TextSize = 11,
+        Color = "TextMuted",
+        Position = UDim2.fromOffset(76, 33),
+        Size = UDim2.new(1, -88, 0, 32),
+        TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        Parent = frame,
+    })
+    return frame
+end
+
+return MediaBox
+end
+
 __modules["Elements/Paragraph"] = function(...)
 local import = ...
 local Base = import("Elements/Base")
@@ -10644,6 +10842,10 @@ end
 -- def: see Components/Window
 function Library:CreateWindow(def)
     def = def or {}
+    -- Common fields used by MacLib-based scripts.
+    def.Subtitle = def.Subtitle or def.SubTitle or def.Author
+    if def.ConfirmClose == true and def.CloseAction == nil then def.CloseAction = "Confirm" end
+    if type(def.User) == "table" and def.User.Enabled == false then def.User = false end
     if not self._started then
         self._started = true
         local name = def.GuiName or "OasisUI"
@@ -10664,6 +10866,92 @@ function Library:CreateWindow(def)
     local window = import("Components/Window").new(self, def)
     table.insert(self.Windows, window)
     return window
+end
+
+-- Compatibility intro for hubs migrated from MacLib. It is intentionally
+-- self-contained because it runs before CreateWindow initialises Layer.
+function Library:CreateIntro(def)
+    def = def or {}
+    local players = game:GetService("Players")
+    local tweenService = game:GetService("TweenService")
+    local input = game:GetService("UserInputService")
+    local parent
+    if type(gethui) == "function" then
+        local ok, value = pcall(gethui)
+        if ok then parent = value end
+    end
+    parent = parent or game:GetService("CoreGui")
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "OasisIntro_" .. tostring(math.random(1000, 9999))
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 100000
+    gui.ResetOnSpawn = false
+    gui.Parent = parent
+
+    local shade = Instance.new("Frame")
+    shade.Size = UDim2.fromScale(1, 1)
+    shade.BackgroundColor3 = Color3.new(0.015, 0.017, 0.022)
+    shade.BackgroundTransparency = 1
+    shade.Parent = gui
+
+    local glow = Instance.new("ImageLabel")
+    glow.AnchorPoint = Vector2.new(0.5, 0.5)
+    glow.Position = UDim2.fromScale(0.5, 0.46)
+    glow.Size = UDim2.fromOffset(176, 176)
+    glow.BackgroundTransparency = 1
+    glow.Image = Util.IconId(def.Logo or def.Icon or "sparkles") or ""
+    glow.ImageColor3 = def.Accent or Color3.fromRGB(150, 110, 255)
+    glow.ImageTransparency = 1
+    glow.Parent = shade
+
+    local logo = glow:Clone()
+    logo.Name = "Logo"
+    logo.Size = UDim2.fromOffset(116, 116)
+    logo.ImageColor3 = Color3.new(1, 1, 1)
+    logo.Parent = shade
+
+    local name = Instance.new("TextLabel")
+    name.AnchorPoint = Vector2.new(0.5, 0)
+    name.Position = UDim2.new(0.5, 0, 0.46, 72)
+    name.Size = UDim2.fromOffset(380, 28)
+    name.BackgroundTransparency = 1
+    name.Text = def.Name or "OASIS UI"
+    name.TextColor3 = Color3.fromRGB(244, 246, 250)
+    name.TextTransparency = 1
+    name.Font = Enum.Font.GothamBold
+    name.TextSize = 20
+    name.Parent = shade
+
+    local sub = name:Clone()
+    sub.Position = UDim2.new(0.5, 0, 0.46, 101)
+    sub.Size = UDim2.fromOffset(460, 20)
+    sub.Text = def.Subtitle or ""
+    sub.TextColor3 = Color3.fromRGB(150, 154, 166)
+    sub.Font = Enum.Font.GothamMedium
+    sub.TextSize = 11
+    sub.Parent = shade
+
+    local skipped = false
+    local connection = input.InputBegan:Connect(function(key)
+        if key.KeyCode == Enum.KeyCode.Return then skipped = true end
+    end)
+    tweenService:Create(shade, TweenInfo.new(0.25), { BackgroundTransparency = 0.2 }):Play()
+    tweenService:Create(glow, TweenInfo.new(0.65, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { ImageTransparency = 0.66, Size = UDim2.fromOffset(205, 205) }):Play()
+    tweenService:Create(logo, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { ImageTransparency = 0, Size = UDim2.fromOffset(132, 132) }):Play()
+    tweenService:Create(name, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
+    tweenService:Create(sub, TweenInfo.new(0.45), { TextTransparency = 0 }):Play()
+
+    local finish = os.clock() + (tonumber(def.Duration) or 2.8)
+    while not skipped and os.clock() < finish do task.wait() end
+    connection:Disconnect()
+    tweenService:Create(shade, TweenInfo.new(0.3), { BackgroundTransparency = 1 }):Play()
+    tweenService:Create(logo, TweenInfo.new(0.25), { ImageTransparency = 1, Size = UDim2.fromOffset(152, 152) }):Play()
+    tweenService:Create(glow, TweenInfo.new(0.25), { ImageTransparency = 1 }):Play()
+    tweenService:Create(name, TweenInfo.new(0.2), { TextTransparency = 1 }):Play()
+    tweenService:Create(sub, TweenInfo.new(0.2), { TextTransparency = 1 }):Play()
+    task.wait(0.32)
+    gui:Destroy()
 end
 
 -- options: Title, Content, Type (Info | Success | Warning | Error), Icon, Duration, Buttons
