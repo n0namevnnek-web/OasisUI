@@ -18,12 +18,19 @@ local Window = OasisUI:CreateWindow({
     Title = "OasisUI",
     Subtitle = "Showcase · v" .. OasisUI.Version,
     Icon = "sparkles",
-    Folder = "OasisUI-Showcase",
+    -- v2 avoids an old saved 50% scale/window size making this showcase tiny.
+    Folder = "OasisUI-Showcase-v2",
+    Size = UDim2.fromOffset(1080, 650),
+    MinSize = Vector2.new(720, 460),
     Tags = { "v" .. OasisUI.Version },
     Theme = "Sapphire",
     ToggleKey = Enum.KeyCode.RightShift,
     CloseAction = "Confirm",
-    User = { Subtitle = "Showcase user" },
+    User = {
+        Name = LocalPlayer and LocalPlayer.Name or "NONAMEVNN05",
+        Subtitle = "Showcase user",
+        Tier = "FREE", -- use "PREMIUM" for the animated gold tier bar
+    },
 })
 
 -- every callback reports to the event log on the Overview tab
