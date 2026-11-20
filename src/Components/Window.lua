@@ -788,7 +788,10 @@ function Window:SetCompact(compact, instant)
     end
 end
 
--- final scale = (screen fit or 1) x user multiplier; with the fit on the window always stays on screen
+-- Final scale is the user's multiplier, limited only when the window physically
+-- cannot fit on screen.  Do not multiply desktop UI by viewport.Y / 1080:
+-- on common 1366x768 displays that made 13 px text render at roughly 9 px even
+-- after the user maximised the window.
 function Window:_fitScale()
     local scale = math.clamp(tonumber(self.Interface.Scale) or 1, 0.25, 4)
     if self.Interface.FitScreen ~= false then
@@ -807,7 +810,8 @@ function Window:_fitScale()
             scale = math.min(scale, (bounds.X - 24) / width, (bounds.Y - 24) / height)
         else
             local size = self.Minimized and self._restoreSize or self.Root.Size
-            scale *= math.clamp(viewport.Y / 1080, 0.5, 2)
+            -- Desktop keeps its requested/readable scale. FitScreen is a safety
+            -- ceiling, not an additional resolution-based shrink multiplier.
             scale = math.min(scale, (bounds.X - 24) / size.X.Offset, (bounds.Y - 24) / size.Y.Offset)
         end
     end
