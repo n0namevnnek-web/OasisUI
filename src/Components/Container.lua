@@ -32,6 +32,7 @@ local KINDS = {
     Image = { "Image" },
     Code = { "Code" },
     Log = { "Log" },
+    DiscordBox = { "DiscordBox" },
 }
 Container.Kinds = KINDS
 
