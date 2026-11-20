@@ -4933,6 +4933,9 @@ function Window:_build()
         Scale = function() return self:GetScale() end,
         Enabled = function()
             if def.Draggable == false then return false end
+            -- The compact bar behaves like WindUI: it is pinned to the top
+            -- centre and cannot accidentally be dragged off-screen.
+            if self.Minimized then return false end
             local point = Util.Pointer()
             if Util.Contains(actions, point) then return false end
             local ok, objects = pcall(function()
@@ -4944,7 +4947,6 @@ function Window:_build()
                     if object:IsDescendantOf(root) and (
                         object:IsA("GuiButton")
                         or object:IsA("TextBox")
-                        or object:IsA("ScrollingFrame")
                     ) then
                         return false
                     end
@@ -5389,26 +5391,38 @@ function Window:SetMinimized(minimized)
     local root = self.Root
     if self.Minimized then
         self._restoreSize = root.Size
+        self._restorePosition = root.Position
         self.Sidebar.Visible, self.Content.Visible, self.SideDivider.Visible = false, false, false
         self.TopDivider.Visible, self.Grip.Visible = false, false
         self.Actions.Search.Visible = false
         self.SubtitleLabel.Visible = false
         local width = math.max(self.TitleLabel.Parent.AbsoluteSize.X / self:GetScale() + 48 + 90, 240)
-        local tween = Util.Tween(root, 0.35, { Size = UDim2.fromOffset(width, TOP) })
+        local pinned = UDim2.new(0.5, 0, 0, TOP / 2 + 8)
+        local tween = Util.Tween(root, 0.35, {
+            Size = UDim2.fromOffset(width, TOP),
+            Position = pinned,
+        }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
         if tween then
             tween.Completed:Once(function()
-                if self.Minimized then self:_clampRoot(true) end
+                if self.Minimized then root.Position = pinned end
             end)
         else
-            self:_clampRoot(true)
+            root.Position = pinned
         end
         self.MinimizeIcon.Image = Util.IconId("maximize-2")
     else
         local restoreSize = self._restoreSize or root.Size
-        -- Move the compact bar's centre first using the expanded bounds. This
-        -- prevents the grow animation from spilling above the screen.
+        local compactPosition = root.Position
+        root.Position = self._restorePosition or UDim2.fromScale(0.5, 0.5)
+        -- Clamp the saved destination for the expanded size, then animate from
+        -- the pinned compact bar to that safe destination.
         self:_clampRoot(true, restoreSize)
-        local tween = Util.Tween(root, 0.35, { Size = restoreSize })
+        local restorePosition = root.Position
+        root.Position = compactPosition
+        local tween = Util.Tween(root, 0.35, {
+            Size = restoreSize,
+            Position = restorePosition,
+        }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
         local function show()
             self.Sidebar.Visible, self.Content.Visible, self.SideDivider.Visible = true, true, true
             self.TopDivider.Visible, self.Grip.Visible = true, self.Def.Resizable ~= false
