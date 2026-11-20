@@ -444,22 +444,49 @@ function Overlays:SetMobileButton(on)
     if on and not self.Mobile then
         local button = window.Maid:Give(Util.New("ImageButton", {
             Name = "MenuButton",
-            Size = UDim2.fromOffset(46, 46),
+            Size = UDim2.fromOffset(38, 38),
             Theme = { BackgroundColor3 = "Surface", BackgroundTransparency = function(t) return math.min(t.SurfaceTransparency, 0.1) end },
             Parent = Layer.Hud,
         }))
         Util.Corner(UDim.new(1, 0), button)
-        Util.Stroke(button, "Accent", function() return 0.3 end, 1.5)
+        Util.Stroke(button, "Accent", function() return 0.22 end, 1.35)
+        local glow = Util.New("Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.new(1, 8, 1, 8), ZIndex = button.ZIndex - 1,
+            Theme = { BackgroundColor3 = "Accent", BackgroundTransparency = function() return 0.78 end },
+            Parent = button,
+        })
+        Util.Corner(UDim.new(1, 0), glow)
+        local logoShadow = Util.Icon(window.Def.Icon or "sparkles", {
+            Size = UDim2.fromOffset(25, 25), AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 1, 0.5, 2), ImageColor3 = Color3.new(0, 0, 0), ImageTransparency = 0.42,
+            Parent = button,
+        })
         local logo = Util.Icon(window.Def.Icon or "sparkles", {
-            Size = UDim2.fromOffset(20, 20),
+            Size = UDim2.fromOffset(24, 24),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.fromScale(0.5, 0.5),
             Theme = { ImageColor3 = function() return Color3.new(1, 1, 1) end },
             Parent = button,
         })
         Util.New("UIGradient", { Rotation = 45, Theme = { Color = function(t) return ColorSequence.new(t.Accent, t.AccentAlt) end }, Parent = logo })
+        local buttonScale = Util.New("UIScale", { Scale = 1, Parent = button })
+        local hover = false
+        button.MouseEnter:Connect(function() hover = true; Util.Tween(buttonScale, 0.12, { Scale = 1.08 }) end)
+        button.MouseLeave:Connect(function() hover = false; Util.Tween(buttonScale, 0.12, { Scale = 1 }) end)
+        local lastPulse = 0
+        window.Maid:Give(Services.RunService.Heartbeat:Connect(function()
+            if not button.Visible or hover then return end
+            local now = os.clock()
+            if now - lastPulse < 2.8 then return end
+            lastPulse = now
+            Util.Tween(buttonScale, 0.16, { Scale = 1.06 })
+            task.delay(0.18, function() if buttonScale.Parent and not hover then Util.Tween(buttonScale, 0.22, { Scale = 1 }) end end)
+        end))
         restore(window, "MobilePos", button, mobileHome)
         window.Maid:Give(Drag.Attach(button, button, {
+            Margin = 10,
+            Scale = function() return Layer.Scale end,
             OnEnd = function(moved)
                 if moved then
                     savePosition(window, "MobilePos", button)
