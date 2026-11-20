@@ -63,6 +63,16 @@ function Base:Set(value, silent)
     self:_commit(value, silent)
 end
 
+-- MacLib/Fluent compatibility. Keep this as a forwarding method instead of
+-- an alias so specialised element Set methods still receive the call.
+function Base:SetValue(value, silent)
+    return self:Set(value, silent)
+end
+
+function Base:GetValue()
+    return self:Get()
+end
+
 function Base:Reset()
     if self.Default ~= nil then self:Set(self.Default) end
 end
