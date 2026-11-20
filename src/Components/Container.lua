@@ -30,6 +30,7 @@ local KINDS = {
     Segmented = { "Segmented" },
     Group = { "Group" },
     Image = { "Image" },
+    MediaBox = { "MediaBox" },
     Code = { "Code" },
     Log = { "Log" },
     DiscordBox = { "DiscordBox" },
