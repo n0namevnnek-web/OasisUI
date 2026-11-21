@@ -7352,19 +7352,53 @@ local IconAliases = {
     ["worm"] = "bug",
 }
 
-function Util.IconId(icon)
+-- Full Lucide support, matching MacLib: uncommon icon names are resolved
+-- lazily only once from the provider and then cached.  The bundled assets keep
+-- common controls instant and remain the offline fallback.
+Util.LucideSource = "https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua"
+local lucideProvider, lucideAttempted, lucideCache = nil, false, {}
+
+local function loadLucide()
+    if lucideAttempted then return lucideProvider end
+    lucideAttempted = true
+    if type(loadstring) ~= "function" or type(game.HttpGet) ~= "function" then return nil end
+    local ok, provider = pcall(function() return loadstring(game:HttpGet(Util.LucideSource))() end)
+    if ok and type(provider) == "table" and type(provider.GetAsset) == "function" then lucideProvider = provider end
+    return lucideProvider
+end
+
+function Util.ResolveIcon(icon)
     if icon == nil or icon == "" then return nil end
-    if type(icon) == "number" then return "rbxassetid://" .. icon end
-    if icon:find("^%a+://") then return icon end
-    if icon:match("^%d+$") then return "rbxassetid://" .. icon end
-    return Icons[icon] or Icons[IconAliases[icon]] or Icons.circle
+    if type(icon) == "table" then return icon end
+    if type(icon) == "number" then return { Url = "rbxassetid://" .. icon } end
+    if type(icon) ~= "string" then return nil end
+    if icon:find("^%a+://") then return { Url = icon } end
+    if icon:match("^%d+$") then return { Url = "rbxassetid://" .. icon } end
+    local name = string.lower(icon:gsub("^lucide:", ""))
+    local bundled = Icons[name] or Icons[IconAliases[name]]
+    if bundled then return { Url = bundled } end
+    if lucideCache[name] ~= nil then return lucideCache[name] or nil end
+    local provider = loadLucide()
+    local ok, resolved = provider and pcall(provider.GetAsset, name)
+    lucideCache[name] = ok and resolved or false
+    return lucideCache[name] or nil
+end
+
+function Util.IconId(icon)
+    local resolved = Util.ResolveIcon(icon)
+    return resolved and (resolved.Url or resolved.Image) or Icons.circle
 end
 
 function Util.Icon(icon, props)
     props = props or {}
     local color = props.Color or "TextDim"
     props.Color = nil
-    props.Image = Util.IconId(icon) or ""
+    local resolved = Util.ResolveIcon(icon)
+    props.Image = resolved and (resolved.Url or resolved.Image) or Icons.circle
+    if resolved then
+        props.ImageRectOffset = resolved.ImageRectOffset or resolved.ImageRectPosition or Vector2.zero
+        props.ImageRectSize = resolved.ImageRectSize or Vector2.zero
+    end
     props.ScaleType = props.ScaleType or Enum.ScaleType.Fit
     local theme = props.Theme or {}
     theme.ImageColor3 = theme.ImageColor3 or color
