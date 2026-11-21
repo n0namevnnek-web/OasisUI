@@ -4963,7 +4963,7 @@ function Window:_build()
         end,
     }))
 
-    -- Thin border handles match MacLib's edge-dragging behaviour without
+    -- Generous border handles match WindUI's edge-dragging behaviour without
     -- intercepting input in the scrollable content area.
     local function attachEdgeDrag(edge)
         self.Maid:Give(Drag.Attach(edge, root, {
@@ -4980,9 +4980,9 @@ function Window:_build()
         }))
     end
     for _, edgeDef in ipairs({
-        { Name = "DragLeftEdge", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 7, 1, 0) },
-        { Name = "DragRightEdge", Position = UDim2.new(1, -7, 0, 0), Size = UDim2.new(0, 7, 1, 0) },
-        { Name = "DragBottomEdge", Position = UDim2.new(0, 0, 1, -7), Size = UDim2.new(1, 0, 0, 7) },
+        { Name = "DragLeftEdge", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 14, 1, 0) },
+        { Name = "DragRightEdge", Position = UDim2.new(1, -14, 0, 0), Size = UDim2.new(0, 14, 1, 0) },
+        { Name = "DragBottomEdge", Position = UDim2.new(0, 0, 1, -14), Size = UDim2.new(1, 0, 0, 14) },
     }) do
         local edge = Util.New("Frame", {
             Name = edgeDef.Name, Active = true, BackgroundTransparency = 1,
@@ -7344,6 +7344,7 @@ local IconAliases = {
     ["scan-eye"] = "scan",
     ["scroll-text"] = "file-text",
     ["shopping-bag"] = "package",
+    ["shopping-cart"] = "package",
     ["swords"] = "swords",
     ["ticket-check"] = "badge-check",
     ["user-round-check"] = "badge-check",
