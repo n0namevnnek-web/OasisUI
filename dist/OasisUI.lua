@@ -4926,10 +4926,10 @@ function Window:_build()
         end)
     end)
 
-    -- Drag from any quiet part of the window. Interactive controls and scroll
-    -- surfaces remain untouched so a slider/dropdown never moves the window.
-    self.Maid:Give(Drag.Attach(root, root, {
-        Margin = 24,
+    -- The top bar is always a safe drag surface.  Interactive content remains
+    -- free for sliders, dropdowns and scrolling.
+    self.Maid:Give(Drag.Attach(topbar, root, {
+        Margin = 0,
         Scale = function() return self:GetScale() end,
         Enabled = function()
             if def.Draggable == false then return false end
@@ -4962,6 +4962,34 @@ function Window:_build()
             self:SaveState()
         end,
     }))
+
+    -- Thin border handles match MacLib's edge-dragging behaviour without
+    -- intercepting input in the scrollable content area.
+    local function attachEdgeDrag(edge)
+        self.Maid:Give(Drag.Attach(edge, root, {
+            Margin = 0,
+            Scale = function() return self:GetScale() end,
+            Enabled = function() return def.Draggable ~= false and not self.Minimized end,
+            OnEnd = function(moved)
+                if not moved then return end
+                local viewport = Layer.Bounds()
+                local center = root.AbsolutePosition + root.AbsoluteSize / 2
+                self.Interface.Position = { math.floor(center.X - viewport.X / 2), math.floor(center.Y - viewport.Y / 2) }
+                self:SaveState()
+            end,
+        }))
+    end
+    for _, edgeDef in ipairs({
+        { Name = "DragLeftEdge", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 7, 1, 0) },
+        { Name = "DragRightEdge", Position = UDim2.new(1, -7, 0, 0), Size = UDim2.new(0, 7, 1, 0) },
+        { Name = "DragBottomEdge", Position = UDim2.new(0, 0, 1, -7), Size = UDim2.new(1, 0, 0, 7) },
+    }) do
+        local edge = Util.New("Frame", {
+            Name = edgeDef.Name, Active = true, BackgroundTransparency = 1,
+            Position = edgeDef.Position, Size = edgeDef.Size, ZIndex = 70, Parent = root,
+        })
+        attachEdgeDrag(edge)
+    end
 
     self:SetCompact(self.Interface.Compact, true)
     self:_fitScale()
