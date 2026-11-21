@@ -4636,15 +4636,15 @@ function Window:_build()
     -- A soft duplicate behind the brand mark gives raster logos the same depth
     -- as the old MacLib header without baking a shadow into every asset.
     local logoShadow = Util.Icon(def.Icon or "sparkles", {
-        Size = UDim2.fromOffset(34, 34),
-        Position = UDim2.fromOffset(9, 10),
+        Size = UDim2.fromOffset(40, 40),
+        Position = UDim2.fromOffset(8, 7),
         ImageColor3 = Color3.new(0, 0, 0),
         ImageTransparency = 0.48,
         Parent = topbar,
     })
     local logo = Util.Icon(def.Icon or "sparkles", {
-        Size = UDim2.fromOffset(32, 32),
-        Position = UDim2.fromOffset(8, 8),
+        Size = UDim2.fromOffset(38, 38),
+        Position = UDim2.fromOffset(7, 6),
         Theme = { ImageColor3 = function() return Color3.new(1, 1, 1) end },
         Parent = topbar,
     })
@@ -4654,7 +4654,7 @@ function Window:_build()
         Parent = logo,
     })
 
-    local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(50, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
+    local heading = Util.New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(58, 8), Size = UDim2.new(0, 0, 0, 18), AutomaticSize = Enum.AutomaticSize.X, Parent = topbar })
     self.TitleHeading = heading
     Util.List(heading, 6, Enum.FillDirection.Horizontal, nil, Enum.VerticalAlignment.Center)
     local title = Util.Label({
@@ -7327,7 +7327,13 @@ Util.Icons = Icons
 -- glyph instead of silently rendering an empty ImageLabel.
 local IconAliases = {
     ["badge-info"] = "info",
+    ["calendar-clock"] = "calendar",
     ["chart-no-axes-column-increasing"] = "chart-bar",
+    ["circle-dollar-sign"] = "gem",
+    ["clipboard-list"] = "clipboard",
+    ["cloud-sun"] = "cloud",
+    ["coins"] = "gem",
+    ["fish"] = "droplet",
     ["home"] = "house",
     ["list-checks"] = "check-check",
     ["locate-fixed"] = "crosshair",
@@ -7337,9 +7343,13 @@ local IconAliases = {
     ["package-open"] = "package",
     ["scan-eye"] = "scan",
     ["scroll-text"] = "file-text",
+    ["shopping-bag"] = "package",
+    ["swords"] = "swords",
     ["ticket-check"] = "badge-check",
     ["user-round-check"] = "badge-check",
     ["users-round"] = "users",
+    ["webhook"] = "link",
+    ["worm"] = "bug",
 }
 
 function Util.IconId(icon)
